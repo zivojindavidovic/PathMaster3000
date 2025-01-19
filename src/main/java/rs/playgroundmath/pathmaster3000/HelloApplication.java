@@ -13,6 +13,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.*;
+import java.util.List;
+import java.util.Random;
 
 public class HelloApplication extends Application {
     private static final int DEFAULT_GRID_SIZE = 5;
@@ -21,6 +23,7 @@ public class HelloApplication extends Application {
     private GameController gameController;
     private BorderPane root;
     private Label statsLabel;
+    private final Random random = new Random();
 
     public static void main(String[] args) {
         launch(args);
@@ -107,14 +110,20 @@ public class HelloApplication extends Application {
     private void randomizeStartAndEnd() {
         gameGrid.randomizeStartAndEnd();
         gameController.resetGame();
+
+        root.setCenter(gameGrid.getGrid());
     }
 
     private void changeGameColor() {
-        gameController.changeGameColor("#ADD8E6");
+        List<String> possibleGameBackgroundColors = List.of("#B39DDB", "#FFCC80", "#C5E1A5");
+        int randomIndex = random.nextInt(possibleGameBackgroundColors.size());
+        gameController.changeGameColor(possibleGameBackgroundColors.get(randomIndex));
     }
 
     private void changePathColor() {
-        gameController.changePathColor("#FFA500");
+        List<String> possiblePathColors = List.of("#F06292", "#FFF176", "#80DEEA");
+        int randomIndex = random.nextInt(possiblePathColors.size());
+        gameController.changePathColor(possiblePathColors.get(randomIndex));
     }
 
     private void saveGame(Stage primaryStage) {
@@ -141,6 +150,10 @@ public class HelloApplication extends Application {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
                 gameGrid = (GameGrid) ois.readObject();
                 gameController = (GameController) ois.readObject();
+
+                gameGrid.reinitializeGrid();
+                gameController.reinitialize(gameGrid);
+
                 initializeLoadedGame();
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -150,15 +163,18 @@ public class HelloApplication extends Application {
 
     private void initializeLoadedGame() {
         root.setCenter(gameGrid.getGrid());
+
         VBox bottomPanel = new VBox(10);
         bottomPanel.setAlignment(Pos.CENTER);
 
-        statsLabel = new Label("Statistics: Path Length: 0, Sum: 0, Score: 0, Time: 0s");
+        statsLabel = new Label();
         gameController.setStatsLabel(statsLabel);
 
         Label scoreLabel = gameController.getScoreLabel();
         bottomPanel.getChildren().addAll(scoreLabel, statsLabel);
 
         root.setBottom(bottomPanel);
+
+        gameController.updateStats();
     }
 }

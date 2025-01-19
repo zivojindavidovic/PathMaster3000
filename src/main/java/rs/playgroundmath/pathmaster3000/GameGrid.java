@@ -12,6 +12,7 @@ import java.util.Set;
 public class GameGrid implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
+
     private transient GridPane grid;
     private final int gridSize;
     private final String[][] buttonStates;
@@ -24,6 +25,24 @@ public class GameGrid implements Serializable {
     }
 
     private void initializeGrid() {
+        if (isButtonStatesEmpty()) {
+            generateRandomGrid();
+        }
+        createGrid();
+    }
+
+    private boolean isButtonStatesEmpty() {
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                if (buttonStates[i][j] != null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void generateRandomGrid() {
         Random random = new Random();
         startX = random.nextInt(gridSize);
         startY = random.nextInt(gridSize);
@@ -33,6 +52,20 @@ public class GameGrid implements Serializable {
             endY = random.nextInt(gridSize);
         } while (startX == endX && startY == endY);
 
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                if (i == startX && j == startY) {
+                    buttonStates[i][j] = "Start";
+                } else if (i == endX && j == endY) {
+                    buttonStates[i][j] = "End";
+                } else {
+                    buttonStates[i][j] = String.valueOf(random.nextInt(10));
+                }
+            }
+        }
+    }
+
+    private void createGrid() {
         grid = new GridPane();
         grid.setHgap(5);
         grid.setVgap(5);
@@ -43,17 +76,16 @@ public class GameGrid implements Serializable {
                 Button button = new Button();
                 button.setPrefSize(50, 50);
 
-                if (i == startX && j == startY) {
+                if ("Start".equals(buttonStates[i][j])) {
                     button.setText("Start");
                     button.setStyle("-fx-background-color: green; -fx-text-fill: white;");
-                } else if (i == endX && j == endY) {
+                } else if ("End".equals(buttonStates[i][j])) {
                     button.setText("End");
                     button.setStyle("-fx-background-color: red; -fx-text-fill: white;");
                 } else {
-                    button.setText(String.valueOf(random.nextInt(10)));
+                    button.setText(buttonStates[i][j]);
                 }
 
-                buttonStates[i][j] = button.getText();
                 grid.add(button, j, i);
             }
         }
@@ -61,24 +93,29 @@ public class GameGrid implements Serializable {
 
     public GridPane getGrid() {
         if (grid == null) {
-            initializeGrid();
+            createGrid();
         }
         return grid;
     }
 
     public void randomizeStartAndEnd() {
-        initializeGrid();
+        generateRandomGrid();
+        createGrid();
     }
 
-    public void changeGameColor(String color, Set<Button> visitedButtons) {
+    public void changeGameColor(String color, Set<int[]> visitedCells) {
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
-                Button button = (Button) grid.getChildren().get(i * gridSize + j);
-                if (!visitedButtons.contains(button) && !"Start".equals(button.getText()) && !"End".equals(button.getText())) {
+                if (!isCellVisited(i, j, visitedCells) && !"Start".equals(buttonStates[i][j]) && !"End".equals(buttonStates[i][j])) {
+                    Button button = (Button) grid.getChildren().get(i * gridSize + j);
                     button.setStyle("-fx-background-color: " + color + ";");
                 }
             }
         }
+    }
+
+    private boolean isCellVisited(int x, int y, Set<int[]> visitedCells) {
+        return visitedCells.stream().anyMatch(cell -> cell[0] == x && cell[1] == y);
     }
 
     public int getStartX() {
@@ -95,5 +132,11 @@ public class GameGrid implements Serializable {
 
     public int getEndY() {
         return endY;
+    }
+
+    public void reinitializeGrid() {
+        if (grid == null) {
+            createGrid();
+        }
     }
 }
